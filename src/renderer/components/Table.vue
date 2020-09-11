@@ -11,9 +11,13 @@
           <div slot="header" class="clearfix">
             <el-row type="flex" justify="space-between" align="middle">
               <el-badge>{{ '课表查询 ' + version }}</el-badge>
-              <el-tooltip content="还在加急开发中" placement="top" effect="dark">
-                <el-button type="text" @click="drawer = true">设置</el-button>
-              </el-tooltip>
+              <el-dropdown @command="handleCommand">
+                <el-link icon="el-icon-more-outline" :underline="false"></el-link>
+                <el-dropdown-menu slot="dropdown">
+                  <el-dropdown-item icon="el-icon-wind-power" command="dialogHistory">历史记录</el-dropdown-item>
+                  <el-dropdown-item icon="el-icon-setting" command="drawerSetting" divided>设置</el-dropdown-item>
+                </el-dropdown-menu>
+              </el-dropdown>
             </el-row>
           </div>
           <div>
@@ -21,20 +25,20 @@
               <el-form-item prop="xgh">
                 <el-input v-model="formXghRef.xgh" placeholder="请输入学号"></el-input>
               </el-form-item>
-              <el-form-item prop="wek">
-                <el-select v-model="formXghRef.wek" placeholder="请选择周数">
+              <el-form-item prop="zc">
+                <el-select v-model="formXghRef.zc" placeholder="请选择第几周">
                   <el-option
-                      v-for="(item, i) in weeks"
-                      :key="i + 1"
-                      :value="i + 1"
-                      :label="item">
-                    <span style="float: left">{{ item }}</span>
-                    <span style="float: right; color: #8492a6; font-size: 13px">{{ (i + 1) + '周' }}</span>
+                      v-for="data in weeks"
+                      :key="data.wek"
+                      :value="data.wek"
+                      :label="data.date">
+                    <span style="float: left">{{ data.date }}</span>
+                    <span style="float: right; color: #8492a6; font-size: 13px">{{ data.wek + '周' }}</span>
                   </el-option>
                 </el-select>
               </el-form-item>
               <el-row type="flex" justify="space-between">
-                <el-button type="text" @click="stroeClear">课表不准确？试试点我清除缓存</el-button>
+                <el-button type="text" @click="cacheStoreClear">课表不准确？试试点我清除缓存</el-button>
                 <el-button round @click="btnClick('formXghRef')">查询</el-button>
               </el-row>
             </el-form>
@@ -42,12 +46,12 @@
         </el-card>
       </el-col>
     </el-row>
-    <!--    课表显示dialog-->
+    <!--课表显示dialog-->
     <el-dialog :fullscreen="true" :center="true" width="100%"
-               :visible.sync="formXghRef.dialogTableVisible" destroy-on-close
+               :visible.sync="dialogClassTable" destroy-on-close
                @close="dialogClose">
-      <el-table :data="formXghRef.classDatas" stripe >
-        <el-table-column :label="'第'+this.formXghRef.wek+'周'" width="70px" align="center">
+      <el-table :data="classData" stripe>
+        <el-table-column :label="'第'+this.formXghRef.zc+'周'" width="70px" align="center">
           <template slot-scope="scope">
             <el-popover trigger="hover" placement="right">
               <p>节数: {{ scope.row.d0[1] }}</p>
@@ -83,7 +87,7 @@
             </el-popover>
           </template>
         </el-table-column>
-        <el-table-column label="周三">
+        <el-table-column label="周三" align="center">
           <template slot-scope="scope">
             <el-popover trigger="hover" placement="top" v-if="scope.row.d3[0] !== scope.row.d3[1]">
               <p>课名: {{ scope.row.d3[0] }}</p>
@@ -118,9 +122,21 @@
         </el-table-column>
       </el-table>
     </el-dialog>
+    <!--历史记录dialog-->
+    <el-dialog :fullscreen="true" :center="true" width="100%" destroy-on-close :visible.sync="dialogHistory">
+      <el-table :data="historyData" stripe>
+        <el-table-column property="date" label="时间戳" align="center"></el-table-column>
+        <el-table-column property="xgh" label="学号" align="center"></el-table-column>
+        <el-table-column property="zc" label="第几周" align="center"></el-table-column>
+        <el-table-column property="state" label="状态" align="center"></el-table-column>
+      </el-table>
+      <el-row type="flex" justify="center" align="middle" style="margin: 10px">
+        <el-button round @click="historyStoreClear">清空历史记录</el-button>
+      </el-row>
+    </el-dialog>
     <!--菜单显示drawer-->
     <el-drawer
-        :visible.sync="drawer"
+        :visible.sync="drawerSetting"
         :with-header="false">
       <el-row type="flex" justify="center">
         <el-image
@@ -161,6 +177,7 @@ export default {
       }, 500)
     }
     const checkWek = (rule, value, callback) => {
+      console.log(value)
       if (!value) {
         return callback(new Error('请选择周数'))
       }
@@ -174,16 +191,19 @@ export default {
     return {
       rules: {
         xgh: [{validator: checkXgh, trigger: 'blur'}],
-        wek: [{validator: checkWek, trigger: 'blur'}]
+        zc: [{validator: checkWek, trigger: 'blur'}]
       },
       weeks: [
-        '2020-09-07~2020-09-13', '2020-09-14~2020-09-20', '2020-09-21~2020-09-27',
-        '2020-09-28~2020-10-04', '2020-10-05~2020-10-11', '2020-10-12~2020-10-18',
-        '2020-10-19~2020-10-25', '2020-10-26~2020-11-01', '2020-11-02~2020-11-08',
-        '2020-11-09~2020-11-15', '2020-11-16~2020-11-22', '2020-11-23~2020-11-29',
-        '2020-11-30~2020-12-06', '2020-12-07~2020-12-13', '2020-12-14~2020-12-20',
-        '2020-12-21~2020-12-27', '2020-12-28~2021-01-03', '2021-01-04~2021-01-10',
-        '2021-01-11~2021-01-17', '2021-01-18~2021-01-24'],
+        {date: '2020-09-07~2020-09-13', wek: '1'}, {date: '2020-09-14~2020-09-20', wek: '2'},
+        {date: '2020-09-21~2020-09-27', wek: '3'}, {date: '2020-09-28~2020-10-04', wek: '4'},
+        {date: '2020-10-05~2020-10-11', wek: '5'}, {date: '2020-10-12~2020-10-18', wek: '6'},
+        {date: '2020-10-19~2020-10-25', wek: '7'}, {date: '2020-10-26~2020-11-01', wek: '8'},
+        {date: '2020-11-02~2020-11-08', wek: '9'}, {date: '2020-11-09~2020-11-15', wek: '10'},
+        {date: '2020-11-16~2020-11-22', wek: '11'}, {date: '2020-11-23~2020-11-29', wek: '12'},
+        {date: '2020-11-30~2020-12-06', wek: '13'}, {date: '2020-12-07~2020-12-13', wek: '14'},
+        {date: '2020-12-14~2020-12-20', wek: '15'}, {date: '2020-12-21~2020-12-27', wek: '16'},
+        {date: '2020-12-28~2021-01-03', wek: '17'}, {date: '2021-01-04~2021-01-10', wek: '18'},
+        {date: '2021-01-11~2021-01-17', wek: '19'}, {date: '2021-01-18~2021-01-24', wek: '20'}],
       courseTime: [
         ['08:30~10:00', '1-2'],
         ['10:20~11:50', '3-4'],
@@ -191,42 +211,49 @@ export default {
         ['15:10~16:40', '7-8'],
         ['18:30~20:00', '9-10']],
       isLoading: false,
-      drawer: false,
+      drawerSetting: false,
+      dialogClassTable: false,
+      dialogHistory: false,
+      classData: [],
+      historyData: [],
       version: '',
       formXghRef: {
-        dialogTableVisible: false,
         xgh: '',
-        wek: '',
-        classData: [['&nbsp;', '\u5927\u5b66\u82f1\u8bedIII<br>C212', 'Python\u7a0b\u5e8f\u5f00\u53d1<br>F204', '&nbsp;', '&nbsp;'], ['Python\u7a0b\u5e8f\u5f00\u53d1<br>F204', '&nbsp;', 'ASP.NET\u5e94\u7528\u5f00\u53d1<br>F206', '\u5927\u5b66\u82f1\u8bedIII<br>C212', 'ASP.NET\u5e94\u7528\u5f00\u53d1<br>F206'], ['&nbsp;', '\u8f6f\u4ef6\u6d4b\u8bd5\u57fa\u7840<br>F210', '&nbsp;', '&nbsp;', '\u8f6f\u4ef6\u6d4b\u8bd5\u57fa\u7840<br>F210'], ['&nbsp;', '\u4f53\u80b2\u9009\u9879-\u7537\u5b50\u7bee\u7403<br>\u4f53\u80b2\u9986', '&nbsp;', '&nbsp;', '&nbsp;'], ['&nbsp;', '&nbsp;', '&nbsp;', '&nbsp;', '&nbsp;']],
-        classDatas: []
+        zc: ''
       }
     }
   },
   created () {
-    const Store = require('electron-store')
-    const store = new Store()
-    this.formXghRef.xgh = store.get('now')
+    const query = this.storePkg.getClassQueryLast()
+    if (query !== undefined) {
+      this.formXghRef.xgh = query.xgh
+      this.formXghRef.zc = query.zc
+    }
     // this.version = app.getVersion()
-    this.version = '0.0.2 beta'
-    // console.log('v:', app.getAppPath())
-    console.log(this.courseTime[0])
+    this.version = '0.0.3 alpha'
+    let a = ['1', '2']
+    a.pop()
+    console.log(a)
   },
   methods: {
     btnClick (formName) {
+      console.log(this.formXghRef.xgh, this.formXghRef.zc)
       this.isLoading = true
       this.$refs[formName].validate((valid) => {
         if (valid) {
-          const Store = require('electron-store')
-          const store = new Store()
-          store.set('now', this.formXghRef.xgh)
-          if (store.get(this.formXghRef.xgh + this.formXghRef.wek) === undefined) {
+          const timeStamp = this.storePkg.pushHistoryQuery(this.formXghRef.xgh, this.formXghRef.zc)
+          const classData = this.storePkg.getCacheClass(this.formXghRef.xgh, this.formXghRef.zc)
+          let state = ''
+          if (classData === undefined) {
             console.log('post')
-            this.getTables()
+            state = this.getTables()
           } else {
             console.log('no-post')
-            this.formXghRef.classDatas = store.get(this.formXghRef.xgh + this.formXghRef.wek)
-            this.formXghRef.dialogTableVisible = true
+            this.classData = classData
+            this.dialogClassTable = true
+            state = 'success'
           }
+          this.storePkg.setHistoryQueryState(timeStamp, state)
         } else {
           this.$message({
             message: '表单验证错误',
@@ -237,27 +264,26 @@ export default {
       this.isLoading = false
     },
     getTables () {
-      this.sisoApi.getCourseTable(this.formXghRef.xgh, this.formXghRef.wek).then((res) => {
+      this.sisoPkg.getCourseTable(this.formXghRef.xgh, this.formXghRef.zc).then((res) => {
         res.json().then(data => {
           console.log('res', data)
-          const Store = require('electron-store')
-          const store = new Store()
-          let classData = data
+          let resData = data
           let reg1 = new RegExp('&nbsp;', 'g')
-          let courseData = []
+          let classData = []
           for (let day = 0; day < 5; day++) {
-            courseData.push({
+            classData.push({
               d0: this.courseTime[day],
-              d1: (classData[day][0] + '<br>8:30~10:00').replace(reg1, ' <br> ').split('<br>'),
-              d2: (classData[day][1] + '<br>10:20~11:50').replace(reg1, ' <br> ').split('<br>'),
-              d3: (classData[day][2] + '<br>13:30~15:00').replace(reg1, ' <br> ').split('<br>'),
-              d4: (classData[day][3] + '<br>15:10~16:40').replace(reg1, ' <br> ').split('<br>'),
-              d5: (classData[day][4] + '<br>18:30~19:10').replace(reg1, ' <br> ').split('<br>')
+              d1: (resData[day][0] + '<br>8:30~10:00').replace(reg1, ' <br> ').split('<br>'),
+              d2: (resData[day][1] + '<br>10:20~11:50').replace(reg1, ' <br> ').split('<br>'),
+              d3: (resData[day][2] + '<br>13:30~15:00').replace(reg1, ' <br> ').split('<br>'),
+              d4: (resData[day][3] + '<br>15:10~16:40').replace(reg1, ' <br> ').split('<br>'),
+              d5: (resData[day][4] + '<br>18:30~19:10').replace(reg1, ' <br> ').split('<br>')
             })
           }
-          store.set(this.formXghRef.xgh + this.formXghRef.wek, courseData)
-          this.formXghRef.classDatas = store.get(this.formXghRef.xgh + this.formXghRef.wek)
-          this.formXghRef.dialogTableVisible = true
+          this.storePkg.setCacheClass(this.formXghRef.xgh, this.formXghRef.zc, classData)
+          this.classData = classData
+          this.dialogClassTable = true
+          return 'success'
         })
       }).catch((ex) => {
         console.log('ex', ex)
@@ -265,20 +291,36 @@ export default {
           message: ex,
           type: 'warning'
         })
+        return 'error'
       })
     },
     dialogClose () {
-      this.formXghRef.classDatas = []
+      this.classData = []
+      this.historyData = []
     },
-    stroeClear () {
-      const Store = require('electron-store')
-      const store = new Store()
-      store.clear()
+    cacheStoreClear () {
+      this.storePkg.clearCacheStore()
       this.$message({
         message: '清除成功',
         type: 'success'
       })
-      // this.ftqq.sendMsgPost('sisoTable', '成功清除缓存')
+      // this.ftqqPkg.sendMsgPost('sisoTable', '成功清除缓存')
+    },
+    historyStoreClear () {
+      this.storePkg.clearHistoryStore()
+      this.dialogHistory = false
+      this.$message({
+        message: '清除成功',
+        type: 'success'
+      })
+    },
+    handleCommand (command) {
+      if (command === 'drawerSetting') {
+        this.drawerSetting = true
+      } else if (command === 'dialogHistory') {
+        this.historyData = this.storePkg.getHistoryQuery()
+        this.dialogHistory = true
+      }
     }
   }
 }
@@ -287,7 +329,7 @@ export default {
 <style>
 .grid-content {
   border-radius: 4px;
-  min-height: 50px;
+  min-height: 90px;
 }
 
 .clearfix:before,

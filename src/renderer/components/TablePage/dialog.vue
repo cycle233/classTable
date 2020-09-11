@@ -1,9 +1,9 @@
 <template>
   <el-dialog :fullscreen="true" :center="true"
-             :visible.sync="formXghRef.dialogTableVisible" destroy-on-close
+             :visible.sync="formXghRef.dialogClassTable" destroy-on-close
              @close="dialogClose">
     <el-table :data="formXghRef.classDatas" stripe>
-      <el-table-column :label="'第'+this.formXghRef.wek+'周'">
+      <el-table-column :label="'第'+this.formXghRef.zc+'周'">
         <template slot-scope="scope">
           <i class="el-icon-time"></i>
           <span style="margin-left: 5px">{{ scope.row.d0 }}</span>

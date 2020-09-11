@@ -7,6 +7,9 @@
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="ProjectId" id="1hIdjX590ujUAOmBrgLatcNkjSX" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -34,6 +37,8 @@
       <workItem from="1599702677163" duration="795000" />
       <workItem from="1599742680492" duration="861000" />
       <workItem from="1599745163004" duration="2410000" />
+      <workItem from="1599819007978" duration="647000" />
+      <workItem from="1599844556803" duration="159000" />
     </task>
     <servers />
   </component>
